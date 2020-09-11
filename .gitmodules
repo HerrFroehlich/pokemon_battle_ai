@@ -1,0 +1,3 @@
+[submodule "pokemon-python"]
+	path = pokemon-python
+	url = https://github.com/nicolaslindbloomairey/pokemon-python.git
