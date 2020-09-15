@@ -158,12 +158,9 @@ class BattleState(object):
         tensor = torch.cat([tensor, opponent_state.to_1d_tensor()],dim=1)
         return tensor
 
-    def filter_move_tensor_by_available(self, move_tensor):
+    def get_atk_move_ids(self) -> torch.tensor:
         own_state,_ = self._get_team_states()
-        #Get rows
-        ids = torch.tensor(own_state.available_move_ids, device=GLOBAL_TORCH_DEVICE)-1 # mv ids start with idx 1
-        return move_tensor.index_select(1, ids)
-
+        return torch.tensor(own_state.available_move_ids, device=GLOBAL_TORCH_DEVICE)
 
     def get_reward(self, rewardFnct) -> float:
         own_state, opponent_state = self._get_team_states()

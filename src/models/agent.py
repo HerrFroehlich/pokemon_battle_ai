@@ -103,7 +103,9 @@ class Agent(object):
                 self._lastaction = self._get_max_move(self._battleState.to_1d_tensor())
                 #TODO what if all moves nodes have <0?
         else:
-            self._lastaction = torch.tensor([[random.randrange(self._config.MAX_MOVES)]], device=GLOBAL_TORCH_DEVICE, dtype=torch.long)
+            #TODO what if some moves have no pp left?
+            n_moves = len(self._battleState.get_atk_move_ids())
+            self._lastaction = torch.tensor([[random.randrange(n_moves)]], device=GLOBAL_TORCH_DEVICE, dtype=torch.long)
 
         # in this context this is the new action
         # TODO implement pass
@@ -170,7 +172,10 @@ class Agent(object):
 
     def _get_max_move(self, state):
         # only evaluate valid moves
-        filtered_output = self._battleState.filter_move_tensor_by_available(self._policy_network(state))
+        ids = self._battleState.get_atk_move_ids()
+
+        #TODO crashes on empty ids ! -> return None -> action:pass
+        filtered_output = self._policy_network(state).index_select(1, ids-1) # mv ids start with idx 1
         # find the best move of all batches (dim=1)
         # TODO what if there is none?
         # 1) no more moves
