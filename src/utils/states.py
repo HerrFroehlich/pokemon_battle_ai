@@ -1,20 +1,21 @@
 from collections import namedtuple
 from pokemonpython.sim.structs import Pokemon, Battle
-from pokemonpython.data.dex import pokedex
-from enum import Enum, auto
-from typing import List
+from pokemonpython.data.dex import pokedex, move_dex
+from enum import Enum, IntEnum, auto
+from typing import List, DefaultDict
 from torch import Tensor
+import torch
 
 class PokemonState(object):
         
-    class Status(Enum):
-        NORMAL = auto()
-        POISONED = auto()
-        BADLY_POISONED = auto()
-        SLEEPING = auto()
-        FROZEN = auto()
-        BURNED = auto()
-        PARALYZED = auto()
+    class Status(IntEnum):
+        NORMAL = 0
+        POISONED = 1
+        BADLY_POISONED = 2
+        SLEEPING = 3
+        FROZEN = 4
+        BURNED = 5
+        PARALYZED = 6
         @staticmethod
         def fromStr(stateStr:str):
             if (stateStr == 'brn'):
@@ -33,7 +34,7 @@ class PokemonState(object):
                 return PokemonState.Status.NORMAL
     
     MAX_POKEDEX_INDEX = len(pokedex)
-    MAX_MOVES = 4
+    MAX_MOVES = len(move_dex)
     MAX_STATES = len(Status)
 
     hprel:float = 0.0
@@ -52,9 +53,13 @@ class PokemonState(object):
                 self.available_moves.append(key)
         self.available_move_ids = []
         for mv in self.available_moves:
-            self.available_move_ids.append(pkm.moves.index(mv))
+            self.available_move_ids.append(move_dex[mv].num)
+            # self.available_move_ids.append(id_to_index_moves[mv])
         # Map a unique id to each pokemon (to generate input neurons later)
-        self.pokedex_id = list(pokedex.keys()).index(pkm.id)
+        self.pokedex_id = pokedex[pkm.id].num       # TODO pokemon with negative nums?
+        if ((self.pokedex_id) < 0):
+            raise NotImplementedError("What shall do we do with negative numbers? Early in the morning")
+
 
     def __str__(self):
         str =  '''\
@@ -70,10 +75,49 @@ class PokemonState(object):
     @staticmethod
     def get_tensor_size() -> int:
         return PokemonState.MAX_POKEDEX_INDEX + PokemonState.MAX_MOVES + PokemonState.MAX_STATES + 1 # relative HP
-               
+    
+    @staticmethod
+    def get_tensor_regions() -> DefaultDict["string", List[int]]:
+        d = {}
+        d["Pokemons"] =  [0, PokemonState.MAX_POKEDEX_INDEX-1]
+        offset = PokemonState.MAX_POKEDEX_INDEX
+        d["Moves"] =  [offset, offset+PokemonState.MAX_MOVES-1]
+        offset += PokemonState.MAX_MOVES
+        d["States"] =  [offset, offset+PokemonState.MAX_STATES-1]
+        offset += PokemonState.MAX_STATES
+        d["relative HP"] =  [offset]
+        #offset += 1
+        return d
 
-    def to_tensor(self) -> Tensor:
-        pass
+    def to_1d_tensor(self, offset:int = 0) -> torch.sparse_coo_tensor:
+        # sparse_tensor = zeros(PokemonState.get_tensor_size())
+        # Activate the respective pokemons neuron
+        # if ((offset + PokemonState.get_tensor_size()) > len(sparse_tensor)):
+        #     raise IndexError("Writting to that tensor beginning from offset %d exceeds its size %d" % (offset, len(sparse_tensor)))
+
+        idx = [[offset + self.pokedex_id-1]] # pkm ids start with idx 1
+        values = [1]
+        offset = PokemonState.MAX_POKEDEX_INDEX
+        for mv_id in self.available_move_ids:
+            idx.append([offset + mv_id - 1]) # mv ids start with idx 1
+            values.append(1)
+
+        offset += PokemonState.MAX_MOVES
+        idx.append([offset+self.status])
+        values.append(1)
+    
+        offset += PokemonState.MAX_STATES
+        idx.append([offset])
+        values.append(self.hprel)
+
+        idx = torch.LongTensor(idx).t()
+        # idx.resize(1, len(values))
+        values = torch.FloatTensor(values)
+        sparse_tensor = torch.sparse_coo_tensor(idx, values, torch.Size([PokemonState.get_tensor_size()]))
+        # sparse_tensor[idx] = values
+
+        return sparse_tensor
+
 
 
 
@@ -97,8 +141,15 @@ class BattleState(object):
         else:
             return 0
 
-    def to_tensor(self) -> Tensor:
-        pass
+    def to_1d_tensor(self) ->  torch.sparse.FloatTensor:
+        tensor = torch.sparse.FloatTensor(self.get_tensor_size())
+        
+        #Add pokemon states
+        tensor = self._team1_active_pkm_state.to_1d_tensor()
+        # offset = self._team1_active_pkm_state.get_tensor_size()
+        tensor = torch.cat([tensor, self._team2_active_pkm_state.to_1d_tensor()])
+        return tensor
+
 
     def __init__(self, battle:Battle, variant:Variant = Variant.SIMPLE):
         self._battle = battle

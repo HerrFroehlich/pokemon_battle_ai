@@ -26,6 +26,9 @@ s = PokemonState(pkm)
 print(s)
 print(s.available_moves)
 
+print(PokemonState.get_tensor_size())
+print(PokemonState.get_tensor_regions())
+
 bs = BattleState(battle)
 
 print (bs)
@@ -34,3 +37,4 @@ default_decide(battle.p2)
 do_turn(battle)
 bs.update()
 print(bs)
+print(bs.to_1d_tensor())
