@@ -125,8 +125,8 @@ class PokemonState(object):
 class BattleState(object):
 
     class Teams(IntEnum):
-        TEAM1 = 1
-        TEAM2 = 2
+        TEAM1 = 0
+        TEAM2 = 1
 
     class Variant(Enum):
         SIMPLE = auto() # use only pkm id, status, relative hp
