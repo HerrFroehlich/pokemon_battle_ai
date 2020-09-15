@@ -96,25 +96,25 @@ class PokemonState(object):
         # if ((offset + PokemonState.get_tensor_size()) > len(sparse_tensor)):
         #     raise IndexError("Writting to that tensor beginning from offset %d exceeds its size %d" % (offset, len(sparse_tensor)))
 
-        idx = [[offset + self.pokedex_id-1]] # pkm ids start with idx 1
+        idx = [[0, offset + self.pokedex_id-1]] # pkm ids start with idx 1
         values = [1]
         offset = PokemonState.MAX_POKEDEX_INDEX
         for mv_id in self.available_move_ids:
-            idx.append([offset + mv_id - 1]) # mv ids start with idx 1
+            idx.append([0, offset + mv_id - 1]) # mv ids start with idx 1
             values.append(1)
 
         offset += PokemonState.MAX_MOVES
-        idx.append([offset+self.status])
+        idx.append([0, offset+self.status])
         values.append(1)
     
         offset += PokemonState.MAX_STATES
-        idx.append([offset])
+        idx.append([0, offset])
         values.append(self.hprel)
 
         idx = torch.LongTensor(idx).t()
         # idx.resize(1, len(values))
         values = torch.FloatTensor(values)
-        sparse_tensor = torch.sparse_coo_tensor(idx, values, torch.Size([PokemonState.get_tensor_size()]), device=GLOBAL_TORCH_DEVICE)
+        sparse_tensor = torch.sparse_coo_tensor(idx, values, torch.Size([1,PokemonState.get_tensor_size()]), device=GLOBAL_TORCH_DEVICE)
         # sparse_tensor[idx] = values
 
         return sparse_tensor
@@ -155,8 +155,15 @@ class BattleState(object):
         own_state, opponent_state = self._get_team_states()
         tensor = own_state.to_1d_tensor()
         # offset = self._team1_active_pkm_state.get_tensor_size()
-        tensor = torch.cat([tensor, opponent_state.to_1d_tensor()])
+        tensor = torch.cat([tensor, opponent_state.to_1d_tensor()],dim=1)
         return tensor
+
+    def filter_move_tensor_by_available(self, move_tensor):
+        own_state,_ = self._get_team_states()
+        #Get rows
+        ids = torch.tensor(own_state.available_move_ids, device=GLOBAL_TORCH_DEVICE)-1 # mv ids start with idx 1
+        return move_tensor.index_select(1, ids)
+
 
     def get_reward(self, rewardFnct) -> float:
         own_state, opponent_state = self._get_team_states()
@@ -172,7 +179,7 @@ class BattleState(object):
         return (own_state, opponent_state)
 
 
-    def __init__(self, battle:Battle, team:BattleState.Teams):
+    def __init__(self, battle:Battle, team:Teams):
         self._battle = battle
         self._team = team
         self.update()
