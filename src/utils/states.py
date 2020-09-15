@@ -5,6 +5,7 @@ from enum import Enum, IntEnum, auto
 from typing import List, DefaultDict
 from torch import Tensor
 import torch
+from src.utils.get_torch_device import GLOBAL_TORCH_DEVICE
 
 class PokemonState(object):
         
@@ -113,7 +114,7 @@ class PokemonState(object):
         idx = torch.LongTensor(idx).t()
         # idx.resize(1, len(values))
         values = torch.FloatTensor(values)
-        sparse_tensor = torch.sparse_coo_tensor(idx, values, torch.Size([PokemonState.get_tensor_size()]))
+        sparse_tensor = torch.sparse_coo_tensor(idx, values, torch.Size([PokemonState.get_tensor_size()]), device=GLOBAL_TORCH_DEVICE)
         # sparse_tensor[idx] = values
 
         return sparse_tensor
@@ -142,8 +143,8 @@ class BattleState(object):
             return 0
 
     def to_1d_tensor(self) ->  torch.sparse.FloatTensor:
-        tensor = torch.sparse.FloatTensor(self.get_tensor_size())
-        
+        # tensor = torch.sparse.FloatTensor(self.get_tensor_size())
+        # TODO performance: reserve?
         #Add pokemon states
         tensor = self._team1_active_pkm_state.to_1d_tensor()
         # offset = self._team1_active_pkm_state.get_tensor_size()
