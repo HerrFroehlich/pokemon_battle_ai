@@ -124,6 +124,10 @@ class PokemonState(object):
 
 class BattleState(object):
 
+    class Teams(IntEnum):
+        TEAM1 = 1
+        TEAM2 = 2
+
     class Variant(Enum):
         SIMPLE = auto() # use only pkm id, status, relative hp
 
@@ -147,14 +151,30 @@ class BattleState(object):
         # tensor = torch.sparse.FloatTensor(self.get_tensor_size())
         # TODO performance: reserve?
         #Add pokemon states
-        tensor = self._team1_active_pkm_state.to_1d_tensor()
+
+        own_state, opponent_state = self._get_team_states()
+        tensor = own_state.to_1d_tensor()
         # offset = self._team1_active_pkm_state.get_tensor_size()
-        tensor = torch.cat([tensor, self._team2_active_pkm_state.to_1d_tensor()])
+        tensor = torch.cat([tensor, opponent_state.to_1d_tensor()])
         return tensor
 
+    def get_reward(self, rewardFnct) -> float:
+        own_state, opponent_state = self._get_team_states()
+        return rewardFnct(own_state, opponent_state)
 
-    def __init__(self, battle:Battle):
+    def _get_team_states(self):
+        if (self._team == BattleState.Teams.TEAM1):
+            own_state = self._team1_active_pkm_state
+            opponent_state = self._team2_active_pkm_state
+        else:
+            own_state = self._team2_active_pkm_state
+            opponent_state = self._team1_active_pkm_state
+        return (own_state, opponent_state)
+
+
+    def __init__(self, battle:Battle, team:BattleState.Teams):
         self._battle = battle
+        self._team = team
         self.update()
 
     

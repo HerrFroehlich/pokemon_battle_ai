@@ -29,7 +29,7 @@ print(s.available_moves)
 print(PokemonState.get_tensor_size())
 print(PokemonState.get_tensor_regions())
 
-bs = BattleState(battle)
+bs = BattleState(battle, BattleState.Teams.TEAM1)
 
 print (bs)
 default_decide(battle.p1)
