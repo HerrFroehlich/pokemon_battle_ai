@@ -126,7 +126,7 @@ class BattleState(object):
     class Variant(Enum):
         SIMPLE = auto() # use only pkm id, status, relative hp
 
-    _variant:Variant = Variant.SIMPLE
+    s_variant:Variant = Variant.SIMPLE
     _battle:Battle = None
     _team1_active_pkm_state:PokemonState = None
     _team2_active_pkm_state:PokemonState = None
@@ -136,7 +136,7 @@ class BattleState(object):
         self._team2_active_pkm_state = PokemonState(self._battle.p2.active_pokemon[0]) # TODO Double fights
     
     def get_tensor_size(self) -> int:
-        if (self._variant == BattleState.Variant.SIMPLE):
+        if (BattleState.s_variant == BattleState.Variant.SIMPLE):
             return 2*PokemonState.get_tensor_size()
         else:
             return 0
@@ -151,9 +151,8 @@ class BattleState(object):
         return tensor
 
 
-    def __init__(self, battle:Battle, variant:Variant = Variant.SIMPLE):
+    def __init__(self, battle:Battle):
         self._battle = battle
-        self._variant = variant
         self.update()
 
     
