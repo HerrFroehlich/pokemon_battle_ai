@@ -136,7 +136,8 @@ class BattleState(object):
         self._team1_active_pkm_state = PokemonState(self._battle.p1.active_pokemon[0]) # TODO Double fights
         self._team2_active_pkm_state = PokemonState(self._battle.p2.active_pokemon[0]) # TODO Double fights
     
-    def get_tensor_size(self) -> int:
+    @staticmethod
+    def get_tensor_size() -> int:
         if (BattleState.s_variant == BattleState.Variant.SIMPLE):
             return 2*PokemonState.get_tensor_size()
         else:
