@@ -1,12 +1,16 @@
 from dataclasses import dataclass, field
 
 from src.models.agent import Agent, AgentConfig, TeamConfig
+from src.utils.statistics import BattleStatsStub, BattleStats, AgentStats
+
 import pokemonpython.sim.sim as sim
 
 @dataclass
 class CompetitionConfig(object):
     N_BATTLES:int = 10000
     N_BATTLES_WITH_SAME_TEAM:int = 100
+    ENABLE_STATS:bool = True
+    STATS_LOG_STEP:int = 100
     AGENTCONFIG:AgentConfig = AgentConfig()
 
 
@@ -25,14 +29,31 @@ class Competition_1vs1(object):
         self._agents = [Agent(aconf, self._tconf), Agent(aconf, self._tconf)]
         self._agent_wins = [0, 0]
 
+        if conf.ENABLE_STATS:
+            astat1 = AgentStats()
+            astat2 = AgentStats()
+            self._agents[0].set_statistic_grabber(astat1)
+            self._agents[1].set_statistic_grabber(astat2)
+            self._stats = BattleStats(astat1, astat2, conf.STATS_LOG_STEP)
+        else:
+            self._stats = BattleStatsStub()
+
+
         self._teams = [self._agents[0].generate_team(), self._agents[1].generate_team()]
 
 
         #TODO GUI
     def add_displayable(self):
         pass
+    
+    def get_stats(self):
+        pass
 
+    def get_winner(self) -> Agent:
+        pass
 
+    def get_loser(self) -> Agent:
+        pass
 
     def run(self):
         
@@ -41,17 +62,16 @@ class Competition_1vs1(object):
                 self._teams = [self._agents[0].generate_team(), self._agents[1].generate_team()]
             print("#------ self._battle %d", battle_cnt+1) # TODO RM
             self._battle = sim.new_battle('single', "Team1", self._teams[0], "Team2", self._teams[1], debug=True) # TODO debug-> false
+            self._battle.weather = '' #normal weather
+
+
+
             self._agents[0].join_battle(self._battle, 0)
             self._agents[1].join_battle(self._battle, 1)
         #   self._displayable.setbattke(self._battle)
             self._run_battle()
 
 
-    def get_winner(self) -> Agent:
-        pass
-
-    def get_loser(self) -> Agent:
-        pass
     
     def _run_battle(self):
         while not self._battle.ended:

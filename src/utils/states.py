@@ -177,6 +177,8 @@ class BattleState(object):
 
 
     def __init__(self, battle:Battle, team:Teams):
+        if team > len(BattleState.Teams)-1:
+            raise RuntimeError("Invalid team %d", team)
         self._battle = battle
         self._team = team
         self.update()

@@ -84,7 +84,7 @@ class Agent(object):
         
         self._battleState.update()
         reward = self._battleState.get_reward(self._config.REWARD_FNCT)
-        self._stats.log_reward(reward)
+        self._stats.log_reward(reward.item())
 
         new_state = self._battleState.to_1d_tensor()
         self._memory.push(old_state, self._lastaction, new_state, reward)
@@ -190,7 +190,7 @@ class Agent(object):
 
         return self._team
 
-    def add_statistic_grabber(self, stats:IAgentStats):
+    def set_statistic_grabber(self, stats:IAgentStats):
         self._stats = stats
 
     def _get_max_move(self, state):
