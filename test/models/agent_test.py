@@ -1,5 +1,6 @@
 
 from src.models.agent import Agent, AgentConfig
+from src.utils.statistics import AgentStats
 from pokemonpython.sim.sim import new_battle, run
 import pokemonpython.sim.sim as sim
 import numpy as np
@@ -11,8 +12,12 @@ import pokemonpython.data.dex as dex
 
 conf = AgentConfig()
 conf.BATCH_SIZE = 3
+conf.EPS_DECAY = 3
+
+stats = AgentStats()
 
 a1 = Agent(conf)
+a1.add_statistic_grabber(stats)
 t1 = a1.generate_team()
 a2 = Agent(conf)
 t2 = a2.generate_team()
@@ -62,3 +67,4 @@ while not battle.ended:
         print("Used moved has multiplier %d against enemy type %s" % (mult, typestr) )
 
     sim.do_turn(battle)
+    print(stats)

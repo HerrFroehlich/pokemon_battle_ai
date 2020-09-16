@@ -9,23 +9,24 @@ import pokemonpython.tools.pick_six as pp_pick_six
 from src.utils.get_torch_device import GLOBAL_TORCH_DEVICE
 from src.utils.replay_memory import ReplayMemory, Transition
 from src.utils.states import BattleState, PokemonState
+from src.utils.statistics import AgentStatsStub,IAgentStats
 from src.models.dqn_network import DQNConfig, DQN
 from src.models.rewards import reward_hp_diff
 
 @dataclass
 class AgentConfig(object):
-    MEMORY_SIZE = 10000 # NOF stored states in memory
-    BATCH_SIZE = 128 # NOF batches used for optimizing
-    EPS_START = 0.9 # epsilon start for expontential random decay function
-    EPS_END = 0.05# epsilon end for expontential random decay function
-    EPS_DECAY = 200 # decay gradient for expontential random decay function
-    GAMMA = 0.999
-    TARGET_UPDATE = 50 # after how many turns update the target NN
+    MEMORY_SIZE:int = 10000 # NOF stored states in memory
+    BATCH_SIZE:int = 128 # NOF batches used for optimizing
+    EPS_START:float = 0.9 # epsilon start for expontential random decay function
+    EPS_END:float = 0.05# epsilon end for expontential random decay function
+    EPS_DECAY:float = 200 # decay gradient for expontential random decay function
+    GAMMA:float = 0.999
+    TARGET_UPDATE:int = 50 # after how many turns update the target NN
     MAX_MOVES = 4
-    NETWORK_CONFIG = DQNConfig()
+    NETWORK_CONFIG:DQNConfig = DQNConfig()
     REWARD_FNCT:object = field(default=reward_hp_diff)
     LOSS_FNCT:object = field(default=torch.nn.functional.smooth_l1_loss)
-    OPTIMIZER = torch.optim.RMSprop
+    OPTIMIZER:object = torch.optim.RMSprop
 
 @dataclass
 class TeamConfig(object):
@@ -39,6 +40,7 @@ class Agent(object):
         self._steps_done = 0
         self._config = config
         self._teamconfig = teamconfig
+        self._stats = AgentStatsStub()
 
         #fill outt the newtork config
         self._config.NETWORK_CONFIG.D_IN = BattleState.get_tensor_size()
@@ -79,11 +81,14 @@ class Agent(object):
         
         self._steps_done += 1
         old_state = self._battleState.to_1d_tensor()
+        
         self._battleState.update()
         reward = self._battleState.get_reward(self._config.REWARD_FNCT)
-        new_state = self._battleState.to_1d_tensor()
+        self._stats.log_reward(reward)
 
+        new_state = self._battleState.to_1d_tensor()
         self._memory.push(old_state, self._lastaction, new_state, reward)
+        
 
         
             # Update the target network, copying all weights and biases in DQN
@@ -103,6 +108,8 @@ class Agent(object):
         sample = random.random()
         eps_threshold = self._config.EPS_END + (self._config.EPS_START - self._config.EPS_END) * \
             math.exp(-1. *  self._steps_done / self._config.EPS_DECAY)
+
+        was_rand = False
         if sample > eps_threshold:
             with torch.no_grad():
                 self._lastaction = self._get_max_move(self._battleState.to_1d_tensor())
@@ -113,6 +120,9 @@ class Agent(object):
                 self._lastaction = None
             else:
                 self._lastaction = torch.tensor([[random.randrange(n_moves)]], device=GLOBAL_TORCH_DEVICE, dtype=torch.long)
+                was_rand = True
+
+        self._stats.log_move(self._lastaction.item(), was_rand)
 
         if (self._lastaction != None):
             return "move", self._lastaction.item()
@@ -165,6 +175,8 @@ class Agent(object):
         #     param.grad.data.clamp_(-1, 1)
         self._optimizer.step()
     
+        self._stats.log_loss(loss.item())
+
         return loss.item()
 
     def generate_team(self, config:TeamConfig = None):
@@ -178,15 +190,15 @@ class Agent(object):
 
         return self._team
 
+    def add_statistic_grabber(self, stats:IAgentStats):
+        self._stats = stats
 
     def _get_max_move(self, state):
         # only evaluate valid moves
         ids = self._battleState.get_atk_move_ids()
-
-
-        #TODO crashes on empty ids ! -> return None -> action:pass
         if len(ids) == 0:
             return None
+
         filtered_output = self._policy_network(state).index_select(1, ids-1) # mv ids start with idx 1
         # find the best move of all batches (dim=1)
         # TODO what if there is none?
