@@ -15,6 +15,7 @@ from src.models.rewards import reward_hp_diff
 
 @dataclass
 class AgentConfig(object):
+    SAVED_NN_FILE:str = ''
     MEMORY_SIZE:int = 10000 # NOF stored states in memory
     BATCH_SIZE:int = 128 # NOF batches used for optimizing
     EPS_START:float = 0.9 # epsilon start for expontential random decay function
@@ -46,6 +47,10 @@ class Agent(object):
         self._config.NETWORK_CONFIG.D_IN = BattleState.get_tensor_size()
         self._config.NETWORK_CONFIG.D_OUT = PokemonState.MAX_MOVES
         self._policy_network = DQN(self._config.NETWORK_CONFIG)
+        if self._config.SAVED_NN_FILE:
+            print("#- Agent: Loading saved dqn network from: ", self._config.SAVED_NN_FILE)
+            self._policy_network.load_state_dict(torch.load(self._config.SAVED_NN_FILE))
+
         self._target_network = DQN(self._config.NETWORK_CONFIG) # TODO really use the filtered network?
         self._target_network.load_state_dict(self._policy_network.state_dict())
         self._target_network.eval()
@@ -77,7 +82,8 @@ class Agent(object):
             raise RuntimeError("Did not join a battle yet!")
 
         if self._lastaction is None:
-            float('-inf')
+            print("No Action last round!") #TODO RM
+            return float('-inf')
         
         self._steps_done += 1
         old_state = self._battleState.to_1d_tensor()
@@ -93,6 +99,7 @@ class Agent(object):
         
             # Update the target network, copying all weights and biases in DQN
         if  self._steps_done % self._config.TARGET_UPDATE == 0:
+            print("Updating target") #TODO RM
             self._target_network.load_state_dict(self._policy_network.state_dict())
 
         return reward
@@ -121,12 +128,13 @@ class Agent(object):
             else:
                 self._lastaction = torch.tensor([[random.randrange(n_moves)]], device=GLOBAL_TORCH_DEVICE, dtype=torch.long)
                 was_rand = True
-
-        self._stats.log_move(self._lastaction.item(), was_rand)
+        
 
         if (self._lastaction != None):
+            self._stats.log_move(self._lastaction.item(), was_rand)
             return "move", self._lastaction.item()
         
+        self._stats.log_move(None, was_rand) # log as pass
         return "pass", None
 
     def optimize(self) -> float:
@@ -191,6 +199,9 @@ class Agent(object):
 
     def set_statistic_grabber(self, stats:IAgentStats):
         self._stats = stats
+
+    def save_network(self, path:str):
+        torch.save(self._policy_network.state_dict(), path)
 
     def _get_max_move(self, state):
         # only evaluate valid moves
