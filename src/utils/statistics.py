@@ -204,7 +204,7 @@ class BattleStats(IBattleStats):
         return modifier
 
     def _extract_mv_data(self, team_col, team_stat:IAgentStats, team_effectivies):
-        for mv_idx in range(len(team_stat.mv_cnts)):
+        for mv_idx in range(len(team_effectivies)):
             mult = team_effectivies[mv_idx]
             if math.isnan(mult):
                 self._current_status_move_cnt[0,team_col] += team_stat.mv_cnts[mv_idx]
