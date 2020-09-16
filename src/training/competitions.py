@@ -1,18 +1,31 @@
+from dataclasses import dataclass, field
+
 from src.models.agent import Agent, AgentConfig, TeamConfig
 import pokemonpython.sim.sim as sim
 
+@dataclass
+class CompetitionConfig(object):
+    N_BATTLES:int = 10000
+    N_BATTLES_WITH_SAME_TEAM:int = 100
+    AGENTCONFIG:AgentConfig = AgentConfig()
+
+
 class Competition_1vs1(object):
     
-    def __init__(self, n_battles:int, aconf:AgentConfig, enable_stats:bool = True):
+    def __init__(self, n_battles:int, conf:CompetitionConfig = CompetitionConfig()):
+    
+        self._conf = conf
+
         self._tconf = TeamConfig()
         self._tconf.N_POKEMON = 1
         self._tconf.ALLOW_ITEMS = False
 
-        self._n_battles = n_battles
-        self._enable_stats = enable_stats
+        aconf = conf.AGENTCONFIG
 
         self._agents = [Agent(aconf, self._tconf), Agent(aconf, self._tconf)]
         self._agent_wins = [0, 0]
+
+        self._teams = [self._agents[0].generate_team(), self._agents[1].generate_team()]
 
 
         #TODO GUI
@@ -23,15 +36,21 @@ class Competition_1vs1(object):
 
     def run(self):
         
-        for battle_cnt in range(self._n_battles):
+        for battle_cnt in range(self._conf.N_BATTLES):
+            if (battle_cnt % self._conf.N_BATTLES_WITH_SAME_TEAM) == 0:
+                self._teams = [self._agents[0].generate_team(), self._agents[1].generate_team()]
             print("#------ self._battle %d", battle_cnt+1) # TODO RM
-            self._battle = sim.new_battle('single', "Team1", self._agents[0].generate_team(), "Team2", self._agents[1].generate_team(), debug=True) # TODO debug-> false
+            self._battle = sim.new_battle('single', "Team1", self._teams[0], "Team2", self._teams[1], debug=True) # TODO debug-> false
             self._agents[0].join_battle(self._battle, 0)
             self._agents[1].join_battle(self._battle, 1)
         #   self._displayable.setbattke(self._battle)
             self._run_battle()
 
-    def get_winner() -> Agent:
+
+    def get_winner(self) -> Agent:
+        pass
+
+    def get_loser(self) -> Agent:
         pass
     
     def _run_battle(self):
