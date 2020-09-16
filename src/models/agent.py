@@ -20,7 +20,7 @@ class AgentConfig(object):
     EPS_END = 0.05# epsilon end for expontential random decay function
     EPS_DECAY = 200 # decay gradient for expontential random decay function
     GAMMA = 0.999
-    TARGET_UPDATE = 10
+    TARGET_UPDATE = 50 # after how many turns update the target NN
     MAX_MOVES = 4
     NETWORK_CONFIG = DQNConfig()
     REWARD_FNCT:object = field(default=reward_hp_diff)
@@ -63,10 +63,10 @@ class Agent(object):
     def end_turn(self) -> torch.FloatTensor:
         """Ends a turn, calculates the reward and stores the previous
          and current state, the last action and the reward to the replay memory
+         After AgentConfig.TARGET_UPDATE turns the target NN is updated
 
         Raises:
             RuntimeError: If join_battle was not called yet
-            RuntimeError: if select_action was not called yet
 
         Returns:
             float: reward for last action
@@ -75,14 +75,20 @@ class Agent(object):
             raise RuntimeError("Did not join a battle yet!")
 
         if self._lastaction is None:
-            raise RuntimeError("Did not  perform an action yet!")
-
+            float('-inf')
+        
+        self._steps_done += 1
         old_state = self._battleState.to_1d_tensor()
         self._battleState.update()
         reward = self._battleState.get_reward(self._config.REWARD_FNCT)
         new_state = self._battleState.to_1d_tensor()
 
         self._memory.push(old_state, self._lastaction, new_state, reward)
+
+        
+            # Update the target network, copying all weights and biases in DQN
+        if  self._steps_done % self._config.TARGET_UPDATE == 0:
+            self._target_network.load_state_dict(self._policy_network.state_dict())
 
         return reward
 
@@ -97,25 +103,26 @@ class Agent(object):
         sample = random.random()
         eps_threshold = self._config.EPS_END + (self._config.EPS_START - self._config.EPS_END) * \
             math.exp(-1. *  self._steps_done / self._config.EPS_DECAY)
-        self._steps_done += 1
         if sample > eps_threshold:
             with torch.no_grad():
                 self._lastaction = self._get_max_move(self._battleState.to_1d_tensor())
-                #TODO what if all moves nodes have <0?
         else:
             #TODO what if some moves have no pp left?
             n_moves = len(self._battleState.get_atk_move_ids())
-            self._lastaction = torch.tensor([[random.randrange(n_moves)]], device=GLOBAL_TORCH_DEVICE, dtype=torch.long)
+            if n_moves == 0:
+                self._lastaction = None
+            else:
+                self._lastaction = torch.tensor([[random.randrange(n_moves)]], device=GLOBAL_TORCH_DEVICE, dtype=torch.long)
 
-        # in this context this is the new action
-        # TODO implement pass
-        return "move", self._lastaction.item()
-    
+        if (self._lastaction != None):
+            return "move", self._lastaction.item()
+        
+        return "pass", None
 
-    def optimize(self):
+    def optimize(self) -> float:
         if len(self._memory) < self._config.BATCH_SIZE:
             print("Not enough batches yet")
-            return
+            return 0.0
 
         transitions = self._memory.sample(self._config.BATCH_SIZE)
         # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
@@ -157,6 +164,8 @@ class Agent(object):
         # for param in policy_net.parameters():
         #     param.grad.data.clamp_(-1, 1)
         self._optimizer.step()
+    
+        return loss.item()
 
     def generate_team(self, config:TeamConfig = None):
         if config is None:
@@ -174,7 +183,10 @@ class Agent(object):
         # only evaluate valid moves
         ids = self._battleState.get_atk_move_ids()
 
+
         #TODO crashes on empty ids ! -> return None -> action:pass
+        if len(ids) == 0:
+            return None
         filtered_output = self._policy_network(state).index_select(1, ids-1) # mv ids start with idx 1
         # find the best move of all batches (dim=1)
         # TODO what if there is none?

@@ -14,11 +14,12 @@ class Competition_1vs1(object):
         self._agents = [Agent(aconf, self._tconf), Agent(aconf, self._tconf)]
         self._agent_wins = [0, 0]
 
-        
-        #TODO GUI
 
-    def add_displayable():
+        #TODO GUI
+    def add_displayable(self):
         pass
+
+
 
     def run(self):
         
@@ -36,8 +37,9 @@ class Competition_1vs1(object):
     def _run_battle(self):
         while not self._battle.ended:
             for i in range(2):
-                actionstr, mv = self._agents[i].select_action()
-                choicestr = actionstr + ' ' + str(mv)
+                choicestr, mv = self._agents[i].select_action()
+                if mv != None:
+                    choicestr += ' ' + str(mv)
                 sim.choose(self._battle,i+1, choicestr)
 
             
@@ -46,7 +48,8 @@ class Competition_1vs1(object):
             for i in range(2):
                 reward = self._agents[i].end_turn()
                 print("Team %d : reward %0.2f" % (i, reward)) # TODO RM
-                self._agents[i].optimize()
+                loss = self._agents[i].optimize()
+                print("Team %d : loss %0.2f" % (i, loss)) # TODO RM
 
 
         if self._battle.winner == 'p1':
