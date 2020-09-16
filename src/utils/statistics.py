@@ -67,6 +67,8 @@ class AgentStats(IAgentStats):
         self.avg_loss = _calc_running_avg(self.avg_loss, loss, self._n_loss)
     
     def reset(self):
+        self._n_reward = 0
+        self._n_loss = 0
         self.mv_cnts = [0,0,0,0]
         self.n_random = 0
         self.n_passed = 0
@@ -133,6 +135,7 @@ class BattleStats(IBattleStats):
         self.ineffective_cnt = np.empty((0,2), dtype=int)
         self.normal_cnt = np.empty((0,2), dtype=int)
         self.status_move_cnt = np.empty((0,2), dtype=int)
+        self.random_cnt = np.empty((0,2), dtype=int)
         self.avg_reward = np.empty((0,2), dtype=float)
         self.avg_loss = np.empty((0,2), dtype=float)
         
@@ -168,9 +171,13 @@ class BattleStats(IBattleStats):
             self.normal_cnt = np.append(self.normal_cnt, self._current_normal_cnt, axis = 0)
             self.status_move_cnt = np.append(self.status_move_cnt, self._current_status_move_cnt, axis = 0)
             
+            self.random_cnt = np.append(self.random_cnt, [[self._team1_stat.n_random, self._team2_stat.n_random]], axis = 0)
             self.avg_reward = np.append(self.avg_reward, [[self._team1_stat.avg_reward, self._team2_stat.avg_reward]], axis = 0)
             self.avg_loss = np.append(self.avg_loss, [[self._team1_stat.avg_loss, self._team2_stat.avg_loss]], axis = 0)
             self.timestamps = np.append(self.timestamps,self._n_battles)
+            self._team1_stat.reset()
+            self._team2_stat.reset()
+            
             
             
             

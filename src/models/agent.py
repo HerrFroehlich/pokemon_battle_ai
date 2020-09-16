@@ -131,7 +131,6 @@ class Agent(object):
 
     def optimize(self) -> float:
         if len(self._memory) < self._config.BATCH_SIZE:
-            print("Not enough batches yet")
             return 0.0
 
         transitions = self._memory.sample(self._config.BATCH_SIZE)
