@@ -215,6 +215,11 @@ class Agent(IAgent):
         if len(self._memory) < self._config.BATCH_SIZE:
             return 0.0
 
+        ids = self._battleState.get_atk_move_ids()
+        if len(ids) == 0:
+            print("Got now moves baby")
+            return 0.0
+
         transitions = self._memory.sample(self._config.BATCH_SIZE)
         # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
         # detailed explanation). This converts batch-array of Transitions
@@ -231,6 +236,12 @@ class Agent(IAgent):
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
         state_next_batch = torch.cat(batch.next_state)
+        
+        diagonal_vals = torch.zeros(torch.Size([PokemonState.MAX_MOVES]), device=GLOBAL_TORCH_DEVICE)
+        for mv_id in ids:
+           diagonal_vals[mv_id - 1] = 1 # mv ids start with idx 1
+           
+        filter_diag = torch.diag(diagonal_vals)
 
         # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
         # columns of actions taken. These are the actions which would've been taken
@@ -243,7 +254,7 @@ class Agent(IAgent):
         # This is merged based on the mask, such that we'll have either the expected
         # state value or 0 in case the state was final.
         # next_state_values = torch.zeros(self._config.BATCH_SIZE, device=device)
-        next_state_values = self._target_network(state_next_batch).max(1)[0].detach()
+        next_state_values = torch.mm(self._target_network(state_next_batch),filter_diag).max(1)[0].detach()
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * self._config.GAMMA) + reward_batch
         # Compute Huber loss

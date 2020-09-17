@@ -31,8 +31,8 @@ aconf = AgentConfig(NETWORK_CONFIG=nnconf)
 aconf.MEMORY_SIZE = 10000 # NOF stored states in memory
 aconf.BATCH_SIZE = 256 # NOF batches used for optimizing
 aconf.EPS_START = 1 # epsilon start for expontential random decay function
-aconf.EPS_END = 0.05# epsilon end for expontential random decay function
-aconf.EPS_DECAY = 200 # decay gradient for expontential random decay function
+aconf.EPS_END = 0.001# epsilon end for expontential random decay function
+aconf.EPS_DECAY = 500 # decay gradient for expontential random decay function
 aconf.GAMMA = 0.999
 aconf.TARGET_UPDATE = 200 # after how many turns update the target NN
 aconf.REWARD_FNCT = reward_min_enemy_hp
@@ -42,10 +42,10 @@ aconf.SAVED_STATE_FILE = LOAD_FILE
 
 # -------------- Setup Competition
 conf = CompetitionConfig(AGENTCONFIG=aconf)
-conf.N_BATTLES = 10000
-conf.N_BATTLES_WITH_SAME_TEAM = 5
+conf.N_BATTLES = 1000
+conf.N_BATTLES_WITH_SAME_TEAM = 2
 conf.ENABLE_STATS = True
-conf.STATS_LOG_STEP = 100
+conf.STATS_LOG_STEP = 20
 conf.DEBUG = False
 conf.VS_RANDOM = False
 print("#- Using config:")
