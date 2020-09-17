@@ -14,12 +14,16 @@ SAVE_FILE = "./data/nn_1vs1" + datetime.now().strftime("_%Y-%m-%d_%H-%M")
 LOAD_FILE = ""
 
 VISUALIZE = False
+USE_NET2 = False
 
 # -------------- Setup NN
 nnconf = DQNConfig()
 #nnconf.D_IN = 1024 ->  setup by agent
 #nnconf.D_OUT = 1024 ->  setup by agent
-nnconf.HIDDENLAYER_SIZES = [512,256,64,256]
+if USE_NET2:
+    nnconf.HIDDENLAYER_SIZES = [2048,1028,512] #net2
+else:
+    nnconf.HIDDENLAYER_SIZES = [512,256,64,256] # net1
 nnconf.HIDDENLAYER_NETWORK_TYPE = torch.nn.Linear # layer type
 nnconf.ACTIVATION_FUNCTION=torch.nn.functional.relu # activator function of each layer
 # -------------- Setup Agents
@@ -28,20 +32,20 @@ aconf.MEMORY_SIZE = 10000 # NOF stored states in memory
 aconf.BATCH_SIZE = 256 # NOF batches used for optimizing
 aconf.EPS_START = 1 # epsilon start for expontential random decay function
 aconf.EPS_END = 0.05# epsilon end for expontential random decay function
-aconf.EPS_DECAY = 2000 # decay gradient for expontential random decay function
+aconf.EPS_DECAY = 200 # decay gradient for expontential random decay function
 aconf.GAMMA = 0.999
 aconf.TARGET_UPDATE = 200 # after how many turns update the target NN
-aconf.REWARD_FNCT = reward_hp_diff
+aconf.REWARD_FNCT = reward_min_enemy_hp
 aconf.LOSS_FNCT = torch.nn.functional.smooth_l1_loss
 aconf.OPTIMIZER = torch.optim.RMSprop
 aconf.SAVED_STATE_FILE = LOAD_FILE
 
 # -------------- Setup Competition
 conf = CompetitionConfig(AGENTCONFIG=aconf)
-conf.N_BATTLES = 1000
+conf.N_BATTLES = 10000
 conf.N_BATTLES_WITH_SAME_TEAM = 5
 conf.ENABLE_STATS = True
-conf.STATS_LOG_STEP = 20
+conf.STATS_LOG_STEP = 100
 conf.DEBUG = False
 conf.VS_RANDOM = False
 print("#- Using config:")
