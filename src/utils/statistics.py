@@ -6,6 +6,29 @@ import math
 from pokemonpython.sim.structs import Pokemon, Battle, get_active_pokemon
 import pokemonpython.data.dex as dex
 
+
+    
+_type_effectivity_table =  pd.read_csv(os.path.join(os.path.dirname(__file__), 'data/type_effictivity.csv'), index_col=0)
+_move_type_table = pd.DataFrame().from_dict(dex.move_dex) #TODO use
+
+def calc_modifier(mvname, user, target):
+    # mvname = user.moves[mv_idx]
+    move = dex.move_dex[mvname]
+    if move.category == 'Status':
+        return float('NaN')
+
+    modifier = 1
+    # STAB (same type attack bonus)
+    if move.type in user.types:
+        modifier *= 1.5
+
+    # TYPE EFFECTIVENESS
+    for each in target.types:
+        type_effect = _type_effectivity_table.at[move.type,each]
+        modifier *= type_effect
+
+    return modifier
+
 def _calc_running_avg(old_avg:float, x:float, N:int):
     return (old_avg + (x-old_avg)/N)
 
@@ -117,9 +140,6 @@ class BattleStatsStub(IBattleStats):
 #-----------------------------------------# \n'''
 
 class BattleStats(IBattleStats):
-    
-    _type_effectivity_table =  pd.read_csv(os.path.join(os.path.dirname(__file__), 'data/type_effictivity.csv'), index_col=0)
-    _move_type_table = pd.DataFrame().from_dict(dex.move_dex) #TODO use
     columns = ["TEAM1", "TEAM2"]
     rows = ["effective_cnt", "ineffective_cnt", "normal_cnt", "status_move_cnt", "avg_reward", "avg_loss"]
     
@@ -159,8 +179,8 @@ class BattleStats(IBattleStats):
         # team1_pkm_type = pkms[0].type
         # team2_pkm_type = pkms[1].type
 
-        team1_effectivies = [BattleStats._calc_multiplier(mv,  pkms[0], pkms[1]) for mv in pkms[0].moves]
-        team2_effectivies = [BattleStats._calc_multiplier(mv, pkms[1],  pkms[0]) for mv in pkms[1].moves]
+        team1_effectivies = [calc_modifier(mv,  pkms[0], pkms[1]) for mv in pkms[0].moves]
+        team2_effectivies = [calc_modifier(mv, pkms[1],  pkms[0]) for mv in pkms[1].moves]
 
         self._extract_mv_data(0, self._team1_stat, team1_effectivies)
         self._extract_mv_data(1, self._team2_stat, team2_effectivies)
@@ -177,31 +197,7 @@ class BattleStats(IBattleStats):
             self.timestamps = np.append(self.timestamps,self._n_battles)
             self._team1_stat.reset()
             self._team2_stat.reset()
-            
-            
-            
-            
-            
-            
-            
-    @staticmethod
-    def _calc_multiplier(mvname, user, target):
-        # mvname = user.moves[mv_idx]
-        move = dex.move_dex[mvname]
-        if move.category == 'Status':
-            return float('NaN')
 
-        modifier = 1
-        # STAB (same type attack bonus)
-        if move.type in user.types:
-            modifier *= 1.5
-
-        # TYPE EFFECTIVENESS
-        for each in target.types:
-            type_effect = BattleStats._type_effectivity_table.at[move.type,each]
-            modifier *= type_effect
-
-        return modifier
 
     def _extract_mv_data(self, team_col, team_stat:IAgentStats, team_effectivies):
         for mv_idx in range(len(team_effectivies)):

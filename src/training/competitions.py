@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from src.models.agent import Agent, AgentConfig, TeamConfig
 from src.utils.statistics import BattleStatsStub, BattleStats, AgentStats
+from src.visuals.displayable import DisplayableStub, IDisplayable
 
 import pokemonpython.sim.sim as sim
 
@@ -44,10 +45,10 @@ class Competition_1vs1(object):
 
         self._teams = [self._agents[0].generate_team(), self._agents[1].generate_team()]
 
+        self._displ = DisplayableStub()
 
-        #TODO GUI
-    def add_displayable(self):
-        pass
+    def add_displayable(self, displ:IDisplayable):
+        self._displ = displ
     
     def get_stats(self):
         return  self._stats
@@ -61,16 +62,16 @@ class Competition_1vs1(object):
         return self._agents[agentIdx]
 
     def run(self):
+
+        self._displ.initialize()
         
         for battle_cnt in range(self._conf.N_BATTLES):
             if (battle_cnt % self._conf.N_BATTLES_WITH_SAME_TEAM) == 0:
                 self._teams = [self._agents[0].generate_team(), self._agents[1].generate_team()]
             print("#------ BATTLE %d" % (battle_cnt+1))
             self._battle = sim.new_battle('single', "Team1", self._teams[0], "Team2", self._teams[1], debug=self._conf.DEBUG)
+            self._displ.set_battle(self._battle)
             self._battle.weather = '' #normal weather
-
-
-
             self._agents[0].join_battle(self._battle, 0)
             self._agents[1].join_battle(self._battle, 1)
         #   self._displayable.setbattke(self._battle)
@@ -83,13 +84,16 @@ class Competition_1vs1(object):
         both_passing_cnt = 0
         while not self._battle.ended:
             have_both_passed = True
+            both_mv_idx = [0, 0]
             for i in range(2):
                 choicestr, mv = self._agents[i].select_action()
+                both_mv_idx[i] = mv
                 if mv != None:
                     choicestr += ' ' + str(mv)
                 sim.choose(self._battle,i+1, choicestr)
                 have_both_passed = have_both_passed and (choicestr == "pass")
 
+            self._displ.start_turn(both_mv_idx[0], both_mv_idx[1])
             both_passing_cnt += have_both_passed
             if (both_passing_cnt > Competition_1vs1.MAX_TURNS_WITH_BOTH_PASSING):
                 print("Both passing for to long -> ending battle")
@@ -102,6 +106,7 @@ class Competition_1vs1(object):
                 # print("Team %d : reward %0.2f" % (i, reward)) # TODO RM
                 loss = self._agents[i].optimize()
                 # print("Team %d : loss %0.2f" % (i, loss)) # TODO RM
+            self._displ.end_turn()
 
         if self._battle.winner == 'p1':
             self._agent_wins[0] += 1

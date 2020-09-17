@@ -1,6 +1,7 @@
 from src.training.competitions import Competition_1vs1, CompetitionConfig, AgentConfig
 from src.models.dqn_network import DQNConfig
 from src.models.rewards import *
+from src.visuals.console import ConsoleDisplayable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,7 +9,11 @@ import torch
 from datetime import datetime
 
 SAVE_FILE = "./data/nn_1vs1" + datetime.now().strftime("_%Y-%m-%d_%H-%M")
+#SAVE_FILE = ""
+# LOAD_FILE = "./data/nn_1vs1_2020-09-16_23-42"
 LOAD_FILE = ""
+
+VISUALIZE = False
 
 # -------------- Setup NN
 nnconf = DQNConfig()
@@ -20,7 +25,7 @@ nnconf.ACTIVATION_FUNCTION=torch.nn.functional.relu # activator function of each
 # -------------- Setup Agents
 aconf = AgentConfig(NETWORK_CONFIG=nnconf)
 aconf.MEMORY_SIZE = 10000 # NOF stored states in memory
-aconf.BATCH_SIZE = 256 # NOF batches used for optimizing
+aconf.BATCH_SIZE = 1024 # NOF batches used for optimizing
 aconf.EPS_START = 1 # epsilon start for expontential random decay function
 aconf.EPS_END = 0.05# epsilon end for expontential random decay function
 aconf.EPS_DECAY = 2000 # decay gradient for expontential random decay function
@@ -43,6 +48,11 @@ print(conf)
 
 
 c = Competition_1vs1(conf)
+
+if (VISUALIZE):
+    disp = ConsoleDisplayable(1000) # wait 1s after each trun
+    c.add_displayable(disp)
+
 c.run()
 
 if conf.ENABLE_STATS:
