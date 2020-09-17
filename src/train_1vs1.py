@@ -23,7 +23,7 @@ nnconf = DQNConfig()
 if USE_NET2:
     nnconf.HIDDENLAYER_SIZES = [2048,1028,512] #net2
 else:
-    nnconf.HIDDENLAYER_SIZES = [512,256,64,256] # net1
+    nnconf.HIDDENLAYER_SIZES = [512,256,128,256] # net1
 nnconf.HIDDENLAYER_NETWORK_TYPE = torch.nn.Linear # layer type
 nnconf.ACTIVATION_FUNCTION=torch.nn.functional.relu # activator function of each layer
 # -------------- Setup Agents
@@ -74,6 +74,8 @@ if conf.ENABLE_STATS:
         line.set_label("Avg Reward")
         line, = ax[i].plot(stats.timestamps,stats.avg_loss[:,i])
         line.set_label("Avg loss")
+        line, = ax[i].plot(stats.timestamps,stats.avg_hp[:,i])
+        line.set_label("Avg HP")
         ax[i].legend()
 
         ax2[i].set_xlabel("Nof Battles")

@@ -159,6 +159,7 @@ class BattleStats(IBattleStats):
         self.avg_reward = np.empty((0,2), dtype=float)
         self.avg_loss = np.empty((0,2), dtype=float)
         self.battles_won_cnt = np.empty((0,2), dtype=int)
+        self.avg_hp = np.empty((0,2), dtype=float)
         
         
         self._n_battles = 0
@@ -171,6 +172,8 @@ class BattleStats(IBattleStats):
         self._current_normal_cnt = np.zeros((1,2), dtype=int)
         self._current_status_move_cnt = np.zeros((1,2), dtype=int)
         self._current_battles_won_cnt = np.zeros((1,2), dtype=int)
+        self._current_avg_hp = np.zeros((1,2), dtype=float)
+        self._n_avg_hp = 0
         
         
     
@@ -182,6 +185,9 @@ class BattleStats(IBattleStats):
             self._current_battles_won_cnt[0,0] += 1
         elif battle.winner == 'p2':
             self._current_battles_won_cnt[0,1] += 1
+        relhp = np.array([(pkms[0].hp/pkms[0].maxhp), (pkms[1].hp/pkms[1].maxhp)])
+        self._n_avg_hp +=1
+        self._current_avg_hp = _calc_running_avg(self._current_avg_hp, relhp, self._n_avg_hp)
 
 
         team1_effectivies = [calc_modifier(mv,  pkms[0], pkms[1]) for mv in pkms[0].moves]
@@ -196,6 +202,7 @@ class BattleStats(IBattleStats):
             self.normal_cnt = np.append(self.normal_cnt, self._current_normal_cnt, axis = 0)
             self.status_move_cnt = np.append(self.status_move_cnt, self._current_status_move_cnt, axis = 0)
             self.battles_won_cnt = np.append(self.battles_won_cnt, self._current_battles_won_cnt, axis = 0)
+            self.avg_hp = np.append(self.avg_hp, self._current_avg_hp, axis = 0)
 
             self.random_cnt = np.append(self.random_cnt, [[self._team1_stat.n_random, self._team2_stat.n_random]], axis = 0)
             
@@ -208,6 +215,8 @@ class BattleStats(IBattleStats):
             self._current_normal_cnt = np.zeros((1,2), dtype=int)
             self._current_status_move_cnt = np.zeros((1,2), dtype=int)
             self._current_battles_won_cnt = np.zeros((1,2), dtype=int)
+            self._current_avg_hp = np.zeros((1,2), dtype=float)
+            self._n_avg_hp = 0
             self._team1_stat.reset()
             self._team2_stat.reset()
 
