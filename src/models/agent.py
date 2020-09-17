@@ -35,8 +35,82 @@ class TeamConfig(object):
     # TODO level sum
     ALLOW_ITEMS = False
 
+class IAgent(object):
 
-class Agent(object):
+    def __init__(self, config:AgentConfig = AgentConfig(), teamconfig:TeamConfig = TeamConfig()):
+        raise NotImplementedError
+
+    def join_battle(self, battle:pp_sim.Battle, team:BattleState.Teams):
+        raise NotImplementedError
+
+    def end_turn(self) -> torch.FloatTensor:
+        raise NotImplementedError
+
+    def select_action(self) -> (str, int):
+        raise NotImplementedError
+
+    def optimize(self) -> float:
+        raise NotImplementedError
+    def generate_team(self, config:TeamConfig = None):
+        raise NotImplementedError
+
+    def set_statistic_grabber(self, stats:IAgentStats):
+        raise NotImplementedError
+
+    def save_network(self, path:str):
+        raise NotImplementedError
+
+class RandomAgent(IAgent):
+    def __init__(self, config:AgentConfig = AgentConfig(), teamconfig:TeamConfig = TeamConfig()):
+        self._steps_done = 0
+        self._config = config
+        self._teamconfig = teamconfig
+        self._stats = AgentStatsStub()
+
+    def join_battle(self, battle:pp_sim.Battle, team:BattleState.Teams):
+        self._battleState = BattleState(battle, team)
+
+    def end_turn(self) -> torch.FloatTensor:
+        self._battleState.update()
+        self._stats.log_reward(0)   # fill it so we have the right length for both teams
+        return 0.0
+
+    def select_action(self) -> (str, int):
+        n_moves = len(self._battleState.get_atk_move_ids())
+        if n_moves == 0:
+            self._lastaction = None
+        else:
+            self._lastaction = torch.tensor([[random.randrange(n_moves)]], device=GLOBAL_TORCH_DEVICE, dtype=torch.long)
+        
+        if (self._lastaction != None):
+            self._stats.log_move(self._lastaction.item(), True)
+            return "move", self._lastaction.item()
+        
+        self._stats.log_move(None, True) # log as pass
+        return "pass", None
+
+    def optimize(self) -> float:
+        self._stats.log_loss(0)
+        return 0.0
+
+    def generate_team(self, config:TeamConfig = None):
+        if config is None:
+            config = self._teamconfig
+
+        self._team = pp_sim.dict_to_team_set(pp_pick_six.generate_team(config.N_POKEMON))
+        if not config.ALLOW_ITEMS:
+            for pkm in self._team:
+                pkm.item = ''
+
+        return self._team
+
+    def set_statistic_grabber(self, stats:IAgentStats):
+        self._stats = stats
+
+    def save_network(self, path:str):
+        pass
+
+class Agent(IAgent):
     def __init__(self, config:AgentConfig = AgentConfig(), teamconfig:TeamConfig = TeamConfig()):
         self._steps_done = 0
         self._config = config

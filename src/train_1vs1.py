@@ -25,7 +25,7 @@ nnconf.ACTIVATION_FUNCTION=torch.nn.functional.relu # activator function of each
 # -------------- Setup Agents
 aconf = AgentConfig(NETWORK_CONFIG=nnconf)
 aconf.MEMORY_SIZE = 10000 # NOF stored states in memory
-aconf.BATCH_SIZE = 1024 # NOF batches used for optimizing
+aconf.BATCH_SIZE = 256 # NOF batches used for optimizing
 aconf.EPS_START = 1 # epsilon start for expontential random decay function
 aconf.EPS_END = 0.05# epsilon end for expontential random decay function
 aconf.EPS_DECAY = 2000 # decay gradient for expontential random decay function
@@ -38,11 +38,12 @@ aconf.SAVED_STATE_FILE = LOAD_FILE
 
 # -------------- Setup Competition
 conf = CompetitionConfig(AGENTCONFIG=aconf)
-conf.N_BATTLES = 10000
+conf.N_BATTLES = 1000
 conf.N_BATTLES_WITH_SAME_TEAM = 5
 conf.ENABLE_STATS = True
-conf.STATS_LOG_STEP = 100
+conf.STATS_LOG_STEP = 20
 conf.DEBUG = False
+conf.VS_RANDOM = False
 print("#- Using config:")
 print(conf)
 
@@ -78,7 +79,8 @@ if conf.ENABLE_STATS:
         cum_eff = np.cumsum(stats.effective_cnt[:,i])
         cum_ineff = np.cumsum(stats.ineffective_cnt[:,i])
         cum_normaleff = np.cumsum(stats.normal_cnt[:,i])
-        cum_alleff = cum_eff + cum_ineff + cum_normaleff
+        cum_status = np.cumsum(stats.status_move_cnt[:,i])
+        cum_alleff = cum_eff + cum_ineff + cum_normaleff + cum_status
         cum_randomeff = np.cumsum(stats.random_cnt[:,i])
 
         line, = ax2[i].plot(stats.timestamps, np.divide(cum_eff, cum_alleff) )
@@ -87,6 +89,8 @@ if conf.ENABLE_STATS:
         line.set_label("Cum. ineffective / cum. total")
         line, = ax2[i].plot(stats.timestamps, np.divide(cum_normaleff, cum_alleff) )
         line.set_label("Cum. normal / cum. total")
+        line, = ax2[i].plot(stats.timestamps, np.divide(cum_status, cum_alleff))
+        line.set_label("Cum. Status moves / cum. total")
         line, = ax2[i].plot(stats.timestamps, np.divide(cum_randomeff, cum_alleff))
         line.set_label("Cum.  Nof random choices / cum. total")
         ax2[i].legend()

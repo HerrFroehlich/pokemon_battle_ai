@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from src.models.agent import Agent, AgentConfig, TeamConfig
+from src.models.agent import Agent, AgentConfig, TeamConfig, IAgent, RandomAgent
 from src.utils.statistics import BattleStatsStub, BattleStats, AgentStats
 from src.visuals.displayable import DisplayableStub, IDisplayable
 
@@ -13,6 +13,7 @@ class CompetitionConfig(object):
     ENABLE_STATS:bool = True
     STATS_LOG_STEP:int = 100
     DEBUG:bool = False
+    VS_RANDOM = False
     AGENTCONFIG:AgentConfig = AgentConfig()
 
 
@@ -30,7 +31,12 @@ class Competition_1vs1(object):
 
         aconf = conf.AGENTCONFIG
 
-        self._agents = [Agent(aconf, self._tconf), Agent(aconf, self._tconf)]
+        if conf.VS_RANDOM:
+            agent2_t = RandomAgent
+        else:
+            agent2_t = Agent
+
+        self._agents = [Agent(aconf, self._tconf), agent2_t(aconf, self._tconf)]
         self._agent_wins = [0, 0]
 
         if conf.ENABLE_STATS:
@@ -55,10 +61,12 @@ class Competition_1vs1(object):
 
     def get_winner(self) -> Agent:
         agentIdx = self._agent_wins.index(max(self._agent_wins))
+        print ("#- TEAM %d won!" % agentIdx+1)
         return self._agents[agentIdx]
 
     def get_loser(self) -> Agent:
         agentIdx = self._agent_wins.index(min(self._agent_wins))
+        print ("#- TEAM %d lost!" % agentIdx+1)
         return self._agents[agentIdx]
 
     def run(self):
