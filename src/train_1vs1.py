@@ -82,6 +82,7 @@ if conf.ENABLE_STATS:
         cum_status = np.cumsum(stats.status_move_cnt[:,i])
         cum_alleff = cum_eff + cum_ineff + cum_normaleff + cum_status
         cum_randomeff = np.cumsum(stats.random_cnt[:,i])
+        cum_battles = np.cumsum(stats.battles_won_cnt[:,i])
 
         line, = ax2[i].plot(stats.timestamps, np.divide(cum_eff, cum_alleff) )
         line.set_label("Cum. effective / cum. total")
@@ -89,8 +90,12 @@ if conf.ENABLE_STATS:
         line.set_label("Cum. ineffective / cum. total")
         line, = ax2[i].plot(stats.timestamps, np.divide(cum_normaleff, cum_alleff) )
         line.set_label("Cum. normal / cum. total")
-        line, = ax2[i].plot(stats.timestamps, np.divide(cum_status, cum_alleff))
-        line.set_label("Cum. Status moves / cum. total")
+        # line, = ax2[i].plot(stats.timestamps, np.divide(cum_status, cum_alleff))
+        # line.set_label("Cum. Status moves / cum. total")
+        
+        line, = ax2[i].plot(stats.timestamps, np.divide(cum_battles, stats.timestamps) )
+        line.set_label("Battles won")
+
         line, = ax2[i].plot(stats.timestamps, np.divide(cum_randomeff, cum_alleff))
         line.set_label("Cum.  Nof random choices / cum. total")
         ax2[i].legend()

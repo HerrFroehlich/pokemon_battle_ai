@@ -150,7 +150,7 @@ class BattleStats(IBattleStats):
 
     def __init__(self, stat_team1:IAgentStats, stat_team2:IAgentStats, log_step:int = 1):
         
-        self.timestamps = np.array([])
+        self.timestamps = np.array([], dtype=int)
         self.effective_cnt = np.empty((0,2), dtype=int)
         self.ineffective_cnt = np.empty((0,2), dtype=int)
         self.normal_cnt = np.empty((0,2), dtype=int)
@@ -158,6 +158,7 @@ class BattleStats(IBattleStats):
         self.random_cnt = np.empty((0,2), dtype=int)
         self.avg_reward = np.empty((0,2), dtype=float)
         self.avg_loss = np.empty((0,2), dtype=float)
+        self.battles_won_cnt = np.empty((0,2), dtype=int)
         
         
         self._n_battles = 0
@@ -169,6 +170,7 @@ class BattleStats(IBattleStats):
         self._current_ineffective_cnt = np.zeros((1,2), dtype=int)
         self._current_normal_cnt = np.zeros((1,2), dtype=int)
         self._current_status_move_cnt = np.zeros((1,2), dtype=int)
+        self._current_battles_won_cnt = np.zeros((1,2), dtype=int)
         
         
     
@@ -176,8 +178,11 @@ class BattleStats(IBattleStats):
         self._n_battles += 1
         pkms = get_active_pokemon(battle) #TODO double fights
 
-        # team1_pkm_type = pkms[0].type
-        # team2_pkm_type = pkms[1].type
+        if battle.winner == 'p1':
+            self._current_battles_won_cnt[0,0] += 1
+        elif battle.winner == 'p2':
+            self._current_battles_won_cnt[0,1] += 1
+
 
         team1_effectivies = [calc_modifier(mv,  pkms[0], pkms[1]) for mv in pkms[0].moves]
         team2_effectivies = [calc_modifier(mv, pkms[1],  pkms[0]) for mv in pkms[1].moves]
@@ -190,17 +195,19 @@ class BattleStats(IBattleStats):
             self.ineffective_cnt = np.append(self.ineffective_cnt, self._current_ineffective_cnt, axis = 0)
             self.normal_cnt = np.append(self.normal_cnt, self._current_normal_cnt, axis = 0)
             self.status_move_cnt = np.append(self.status_move_cnt, self._current_status_move_cnt, axis = 0)
-            
+            self.battles_won_cnt = np.append(self.battles_won_cnt, self._current_battles_won_cnt, axis = 0)
+
             self.random_cnt = np.append(self.random_cnt, [[self._team1_stat.n_random, self._team2_stat.n_random]], axis = 0)
+            
             self.avg_reward = np.append(self.avg_reward, [[self._team1_stat.avg_reward, self._team2_stat.avg_reward]], axis = 0)
             self.avg_loss = np.append(self.avg_loss, [[self._team1_stat.avg_loss, self._team2_stat.avg_loss]], axis = 0)
             self.timestamps = np.append(self.timestamps,self._n_battles)
-
 
             self._current_effective_cnt = np.zeros((1,2), dtype=int)
             self._current_ineffective_cnt = np.zeros((1,2), dtype=int)
             self._current_normal_cnt = np.zeros((1,2), dtype=int)
             self._current_status_move_cnt = np.zeros((1,2), dtype=int)
+            self._current_battles_won_cnt = np.zeros((1,2), dtype=int)
             self._team1_stat.reset()
             self._team2_stat.reset()
 

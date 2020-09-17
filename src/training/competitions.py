@@ -61,12 +61,12 @@ class Competition_1vs1(object):
 
     def get_winner(self) -> Agent:
         agentIdx = self._agent_wins.index(max(self._agent_wins))
-        print ("#- TEAM %d won!" % agentIdx+1)
+        print ("#- TEAM %d won the 1vs1 competition!" % (agentIdx+1))
         return self._agents[agentIdx]
 
     def get_loser(self) -> Agent:
         agentIdx = self._agent_wins.index(min(self._agent_wins))
-        print ("#- TEAM %d lost!" % agentIdx+1)
+        print ("#- TEAM %d lost the 1vs1 competition!" % (agentIdx+1))
         return self._agents[agentIdx]
 
     def run(self):
