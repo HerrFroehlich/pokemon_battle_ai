@@ -17,6 +17,8 @@ class CompetitionConfig(object):
 
 class Competition_1vs1(object):
     
+    MAX_TURNS_WITH_BOTH_PASSING = 10
+
     def __init__(self, conf:CompetitionConfig = CompetitionConfig()):
     
         self._conf = conf
@@ -78,14 +80,21 @@ class Competition_1vs1(object):
 
     
     def _run_battle(self):
+        both_passing_cnt = 0
         while not self._battle.ended:
+            have_both_passed = True
             for i in range(2):
                 choicestr, mv = self._agents[i].select_action()
                 if mv != None:
                     choicestr += ' ' + str(mv)
                 sim.choose(self._battle,i+1, choicestr)
+                have_both_passed = have_both_passed and (choicestr == "pass")
 
-            
+            both_passing_cnt += have_both_passed
+            if (both_passing_cnt > Competition_1vs1.MAX_TURNS_WITH_BOTH_PASSING):
+                print("Both passing for to long -> ending battle")
+                break
+
             sim.do_turn(self._battle)
 
             for i in range(2):
@@ -94,12 +103,9 @@ class Competition_1vs1(object):
                 loss = self._agents[i].optimize()
                 # print("Team %d : loss %0.2f" % (i, loss)) # TODO RM
 
-
         if self._battle.winner == 'p1':
             self._agent_wins[0] += 1
-        elif self._battle.winner == 'p2':
+        if self._battle.winner == 'p2':
             self._agent_wins[1] += 1
-        else :
-            print("No winner this round") # TODO rm
              #self._displayable.update()
 
