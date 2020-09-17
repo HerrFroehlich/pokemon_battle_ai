@@ -215,7 +215,7 @@ class BattleStats(IBattleStats):
             elif BattleStats.normal_range[0] <= mult <= BattleStats.normal_range[1]:
                 self._current_normal_cnt[0,team_col] += team_stat.mv_cnts[mv_idx]
             else:
-                raise RuntimeError("ERROR: Invalid Range")
+               print("ERROR: Invalid Range for mult %f", mult)
 
     def __str__(self):
         string = '''\
