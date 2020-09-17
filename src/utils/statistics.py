@@ -195,6 +195,12 @@ class BattleStats(IBattleStats):
             self.avg_reward = np.append(self.avg_reward, [[self._team1_stat.avg_reward, self._team2_stat.avg_reward]], axis = 0)
             self.avg_loss = np.append(self.avg_loss, [[self._team1_stat.avg_loss, self._team2_stat.avg_loss]], axis = 0)
             self.timestamps = np.append(self.timestamps,self._n_battles)
+
+
+            self._current_effective_cnt = np.zeros((1,2), dtype=int)
+            self._current_ineffective_cnt = np.zeros((1,2), dtype=int)
+            self._current_normal_cnt = np.zeros((1,2), dtype=int)
+            self._current_status_move_cnt = np.zeros((1,2), dtype=int)
             self._team1_stat.reset()
             self._team2_stat.reset()
 
@@ -204,12 +210,16 @@ class BattleStats(IBattleStats):
             mult = team_effectivies[mv_idx]
             if math.isnan(mult):
                 self._current_status_move_cnt[0,team_col] += team_stat.mv_cnts[mv_idx]
+                team_stat.mv_cnts[mv_idx] = 0
             elif BattleStats.effective_range[0] <= mult <= BattleStats.effective_range[1]:
                 self._current_effective_cnt[0,team_col] += team_stat.mv_cnts[mv_idx]
+                team_stat.mv_cnts[mv_idx] = 0
             elif BattleStats.ineffective_range[0] <= mult <= BattleStats.ineffective_range[1]:
                 self._current_ineffective_cnt[0,team_col] += team_stat.mv_cnts[mv_idx]
+                team_stat.mv_cnts[mv_idx] = 0
             elif BattleStats.normal_range[0] <= mult <= BattleStats.normal_range[1]:
                 self._current_normal_cnt[0,team_col] += team_stat.mv_cnts[mv_idx]
+                team_stat.mv_cnts[mv_idx] = 0
             else:
                print("ERROR: Invalid Range for mult %f", mult)
 
