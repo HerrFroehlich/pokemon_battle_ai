@@ -20,7 +20,7 @@ class ConsoleDisplayable(IDisplayable):
         if self._battle == None:
             raise RuntimeError("No battle was set yet!")
 
-        print ("*xxxxxxxxxxxxx TURN %d xxxxxxxxxxxxx* " % self._battle.turn)
+        print ("*xxxxxxxxxxxxx TURN %d xxxxxxxxxxxxx* " % (self._battle.turn+1))
             
         pkm1 = self._battle.p1.active_pokemon[0]
         pkm2 = self._battle.p2.active_pokemon[0]
