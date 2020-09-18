@@ -1,0 +1,11 @@
+1) If downloading from git run:
+	git submodule init
+
+2) Edit your Python Path to the contain the pokemon python module:
+export PYTHONPATH="$CWD/pokemonpython:$PYTHONPATH"
+
+OR 
+use the run_file.sh to execute a python file
+
+3) Main test script: src/train_1vs1.py:
+Here you can edit Metaparameters as you wish. Nets can be saved and reloaded.
